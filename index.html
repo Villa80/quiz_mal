@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Analiza Czasu Trwania - Quiz</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pr:#4F46E5;--pr2:#4338CA;--ok:#16A34A;--ok2:#DCFCE7;
+  --er:#DC2626;--er2:#FEE2E2;--wa:#D97706;
+  --bg:#F3F4F6;--sf:#FFFFFF;--bd:#E5E7EB;
+  --tx:#111827;--mu:#6B7280;--rad:12px;
+  --shadow:0 1px 3px rgba(0,0,0,.12)
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111827;--sf:#1F2937;--bd:#374151;
+  --tx:#F9FAFB;--mu:#9CA3AF;
+  --ok2:#14532D;--er2:#7F1D1D
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:var(--bg);color:var(--tx);min-height:100dvh}
+.hidden{display:none!important}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+/* SCREENS */
+.screen{min-height:100dvh;display:flex;flex-direction:column}
+/* MENU */
+#screen-menu{padding:env(safe-area-inset-top,0) 0 calc(env(safe-area-inset-bottom,0)+16px)}
+.menu-header{padding:24px 20px 8px;text-align:center}
+.menu-title{font-size:22px;font-weight:700;color:var(--pr)}
+.menu-sub{font-size:13px;color:var(--mu);margin-top:4px}
+.menu-section{padding:16px 16px 0;font-size:12px;font-weight:600;
+  color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.modes{display:flex;flex-direction:column;gap:10px;padding:10px 16px}
+.btn-mode{padding:14px 20px;border-radius:var(--rad);font-size:15px;
+  font-weight:600;text-align:left;transition:opacity .15s;
+  display:flex;align-items:center;gap:10px}
+.btn-mode:active{opacity:.8}
+.btn-lecturer{background:var(--pr);color:#fff}
+.btn-secondary{background:var(--sf);color:var(--tx);
+  border:1.5px solid var(--bd);box-shadow:var(--shadow)}
+.chapter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 16px}
+.ch-card{background:var(--sf);border-radius:var(--rad);padding:12px;
+  box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
+.ch-card:active{transform:scale(.97)}
+.ch-icon{font-size:22px;margin-bottom:4px}
+.ch-name{font-size:12px;font-weight:600;line-height:1.3}
+.ch-count{font-size:11px;color:var(--mu);margin-top:2px}
+.ch-done{color:var(--pr);font-weight:700}
+.ch-bar{height:4px;background:var(--bd);border-radius:2px;margin-top:6px}
+.ch-fill{height:100%;border-radius:2px;transition:width .3s}
+.fill-good{background:var(--ok)}.fill-med{background:var(--wa)}.fill-bad{background:var(--er)}.fill-none{background:var(--bd)}
+.ch-pct{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600}
+.ch-resume{font-size:10px;color:var(--pr);font-weight:700;margin-top:4px;
+  background:#EEF2FF;border-radius:6px;padding:2px 6px;display:inline-block}
+@media(prefers-color-scheme:dark){.ch-resume{background:#312E81}}
+.ch-has-session{border:1.5px solid var(--pr)}
+.menu-footer{padding:20px 16px 0;text-align:center}
+.btn-reset{font-size:12px;color:var(--mu);background:none;
+  padding:8px 16px;border:1px solid var(--bd);border-radius:20px}
+/* QUIZ HEADER */
+#screen-quiz{background:var(--bg)}
+.quiz-header{position:sticky;top:0;z-index:10;
+  background:var(--sf);border-bottom:1px solid var(--bd);
+  padding:env(safe-area-inset-top,0) 16px 0}
+.quiz-header-inner{display:flex;align-items:center;justify-content:space-between;height:48px}
+.btn-back{font-size:14px;color:var(--pr);background:none;padding:4px 0}
+.q-progress-text{font-size:13px;font-weight:600;color:var(--mu)}
+.timer{font-size:14px;font-weight:700;color:var(--pr);
+  background:var(--bg);padding:4px 10px;border-radius:20px}
+.timer.danger{color:var(--er)}
+.progress-bar{height:3px;background:var(--bd)}
+.progress-fill{height:100%;background:var(--pr);transition:width .3s}
+/* QUESTION CARD */
+.question-card{margin:16px;background:var(--sf);border-radius:var(--rad);
+  padding:20px;box-shadow:var(--shadow)}
+.q-tag{display:inline-block;font-size:11px;font-weight:600;
+  color:var(--pr);background:#EEF2FF;border-radius:20px;
+  padding:3px 10px;margin-bottom:12px}
+@media(prefers-color-scheme:dark){.q-tag{background:#312E81}}
+.q-text{font-size:16px;line-height:1.55;font-weight:500}
+.q-multi{font-size:12px;color:var(--mu);margin-top:8px;font-style:italic}
+/* ANSWERS */
+.answers{display:flex;flex-direction:column;gap:10px;padding:0 16px 16px}
+.ans-card{background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rad);
+  padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;
+  transition:border-color .15s,background .15s;min-height:52px}
+.ans-card:active{opacity:.85}
+.ans-card.sel{border-color:var(--pr);background:#EEF2FF}
+@media(prefers-color-scheme:dark){.ans-card.sel{background:#312E81}}
+.ans-card.ok{border-color:var(--ok);background:var(--ok2)}
+.ans-card.err{border-color:var(--er);background:var(--er2)}
+.ans-marker{font-size:18px;flex-shrink:0;line-height:1.2;min-width:22px}
+.ans-text{font-size:14px;line-height:1.5}
+/* CHECK BUTTON */
+.check-wrap{padding:0 16px 16px}
+.btn-check{width:100%;padding:16px;border-radius:var(--rad);
+  font-size:16px;font-weight:700;
+  background:var(--pr);color:#fff;transition:opacity .15s}
+.btn-check:disabled{background:var(--bd);color:var(--mu);cursor:not-allowed}
+.btn-check:not(:disabled):active{opacity:.85}
+/* FEEDBACK */
+.feedback{margin:0 16px 16px;padding:14px;border-radius:var(--rad)}
+.fb-ok{background:var(--ok2);color:var(--ok)}
+.fb-err{background:var(--er2);color:var(--er)}
+.fb-label{font-size:15px;font-weight:700;margin-bottom:12px}
+.btn-next{width:100%;padding:16px;border-radius:var(--rad);
+  font-size:16px;font-weight:700;background:var(--pr);color:#fff}
+.btn-next:active{opacity:.85}
+/* RESULTS */
+#screen-results{padding:env(safe-area-inset-top,0) 0 calc(env(safe-area-inset-bottom,0)+20px)}
+.results-header{padding:24px 20px;text-align:center}
+.result-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.result-score{font-size:48px;font-weight:800;color:var(--pr)}
+.result-pct{font-size:22px;color:var(--mu);margin-bottom:8px}
+.result-label{font-size:18px;margin-bottom:14px}
+.result-bar-bg{height:8px;background:var(--bd);border-radius:4px;margin:0 20px 20px}
+.result-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.wrong-section{padding:0 16px}
+.wrong-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.wrong-item{background:var(--sf);border-radius:var(--rad);padding:14px;
+  margin-bottom:10px;box-shadow:var(--shadow)}
+.wrong-q{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.4}
+.wrong-chosen{font-size:12px;color:var(--er);margin-bottom:3px}
+.wrong-correct{font-size:12px;color:var(--ok)}
+.all-correct{text-align:center;font-size:16px;padding:20px 0}
+.results-footer{display:flex;gap:10px;padding:20px 16px 0}
+.btn-retry{flex:1;padding:14px;border-radius:var(--rad);font-size:14px;
+  font-weight:600;background:var(--sf);color:var(--pr);
+  border:1.5px solid var(--pr)}
+.btn-menu{flex:1;padding:14px;border-radius:var(--rad);font-size:14px;
+  font-weight:700;background:var(--pr);color:#fff}
+/* DESKTOP */
+@media(min-width:768px){
+  .menu-header{padding-top:40px}
+  .modes,.chapter-grid,.wrong-section,.results-footer,.check-wrap,.answers{
+    max-width:560px;margin-left:auto;margin-right:auto}
+  .modes,.chapter-grid{padding-left:0;padding-right:0}
+  .quiz-header-inner,.question-card,.answers,.check-wrap,.feedback,
+  .results-header,.wrong-section,.results-footer{
+    max-width:640px;margin-left:auto;margin-right:auto}
+  .question-card,.quiz-header,.answers{padding-left:0;padding-right:0}
+  .question-card{margin-left:auto;margin-right:auto;width:100%;max-width:640px}
+  .answers,.check-wrap,.feedback{padding-left:0;padding-right:0}
+}
+</style>
+</head>
+<body>
+
+<div id="screen-menu" class="screen">
+  <div class="menu-header">
+    <div class="menu-title">Analiza Czasu Trwania - Quiz</div>
+    <div class="menu-sub" id="menu-sub">Ładowanie statystyk…</div>
+  </div>
+
+  <div class="menu-section">Tryby nauki</div>
+  <div class="modes">
+    <button class="btn-mode btn-lecturer" onclick="startQuiz('lecturer')">
+      📖 Pytania wykładowcy · <span id="stat-lecturer">…</span>
+    </button>
+    <button class="btn-mode btn-secondary" onclick="startQuiz('all')">
+      📚 Wszystkie pytania · <span id="stat-all">…</span>
+    </button>
+    <button class="btn-mode btn-secondary" onclick="startQuiz('exam')">
+      ✍️ Egzamin próbny (30 pyt. · 45 min)
+    </button>
+    <button class="btn-mode btn-secondary" onclick="startQuiz('hard')">
+      ❌ Najtrudniejsze (<span id="stat-hard">…</span>)
+    </button>
+  </div>
+
+  <div class="menu-section">Nauka działu</div>
+  <div class="chapter-grid" id="chapter-grid"></div>
+
+  <div class="menu-footer">
+    <button class="btn-reset" onclick="resetStats()">Resetuj statystyki</button>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-header">
+    <div class="quiz-header-inner">
+      <button class="btn-back" onclick="exitQuiz()">← Menu</button>
+      <span class="q-progress-text" id="q-prog-text">1 / 30</span>
+      <span class="timer hidden" id="timer">45:00</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="q-prog-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="question-card" id="question-card">
+    <div class="q-tag" id="q-tag">Dział</div>
+    <div class="q-text" id="q-text">Pytanie…</div>
+    <div class="q-multi hidden" id="q-multi">(wielokrotny wybór — zaznacz wszystkie poprawne)</div>
+  </div>
+
+  <div class="answers" id="answers"></div>
+
+  <div class="check-wrap">
+    <button class="btn-check" id="btn-check" disabled onclick="checkAnswer()">
+      Sprawdź odpowiedź
+    </button>
+  </div>
+
+  <div class="feedback hidden" id="feedback"></div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-header">
+    <div class="result-title">Wyniki sesji</div>
+    <div class="result-score" id="res-score">0</div>
+    <div class="result-pct" id="res-pct">0%</div>
+    <div class="result-label" id="res-label"></div>
+    <div class="result-bar-bg">
+      <div class="result-bar-fill" id="res-bar" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="wrong-section">
+    <div class="wrong-title" id="wrong-title"></div>
+    <div id="wrong-list"></div>
+  </div>
+  <div class="results-footer">
+    <button class="btn-retry" id="btn-retry" onclick="retryWrong()">Powtórz błędne</button>
+    <button class="btn-menu" onclick="showMenu()">Powrót do menu</button>
+  </div>
+</div>
+
+<script>
+const Q = [{"id":"Q1","chapter":"zeszloroczny","type":"single","q":"Cechy, które służą do identyfikacji stanu, w którym znajdują się dane jednostki, to cechy:","answers":[{"id":"A","text":"pierwotne","correct":true},{"id":"B","text":"wtórne","correct":false},{"id":"C","text":"stałe","correct":false}]},{"id":"Q2","chapter":"zeszloroczny","type":"single","q":"Następujący wzór: S(t)=P(T>t) definiuje funkcję:","answers":[{"id":"A","text":"funkcję gęstości","correct":false},{"id":"B","text":"funkcję przeżycia","correct":true},{"id":"C","text":"funkcję hazardu","correct":false}]},{"id":"Q3","chapter":"zeszloroczny","type":"single","q":"Do metod parametrycznych zaliczamy:","answers":[{"id":"A","text":"modele proporcjonalnych hazardów","correct":true},{"id":"B","text":"model Nelsona-Aalena","correct":false},{"id":"C","text":"Kaplana Meiera","correct":false}]},{"id":"Q4","chapter":"zeszloroczny","type":"single","q":"Tradycyjna metoda konstrukcji tablic trwania życia:","answers":[{"id":"A","text":"może być stosowana tylko wtedy, gdy mamy mało obserwacji","correct":false},{"id":"B","text":"wymaga grupowania poszczególnych czasów obserwacji w przedziały o jednakowej długości","correct":true},{"id":"C","text":"nie znajduje zastosowania, gdy chcemy wyznaczyć estymator funkcji hazardu","correct":false}]},{"id":"Q5","chapter":"zeszloroczny","type":"single","q":"Do nieinformacyjnych rozkładów a priori zalicza się:","answers":[{"id":"A","text":"rozkłady normalne o małej wariancji","correct":false},{"id":"B","text":"rozkłady normalne z dowolnymi parametrami","correct":true},{"id":"C","text":"rozkłady normalne, których parametry wyznacza się na podstawie wcześniejszych badań","correct":false}]},{"id":"Q6","chapter":"zeszloroczny","type":"single","q":"Modelem, który może być rozważany zarówno jako model proporcjonalnych hazardów, jak i model przyspieszonej porażki jest model:","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"wykładniczy","correct":true},{"id":"C","text":"Gompertza","correct":false}]},{"id":"Q7","chapter":"zeszloroczny","type":"single","q":"Założenie proporcjonalnych hazardów może być weryfikowane z wykorzystaniem:","answers":[{"id":"A","text":"zmiennych zależnych od czasu","correct":true},{"id":"B","text":"reszt Kołmogorowa","correct":false},{"id":"C","text":"reszt odchylenia","correct":false}]},{"id":"Q8","chapter":"zeszloroczny","type":"single","q":"Na gruncie bayesowskim wnioskowanie statystyczne o dowolnym parametrze bazuje na:","answers":[{"id":"A","text":"rozkładzie a posteriori","correct":true},{"id":"B","text":"rozkładzie a priori","correct":false},{"id":"C","text":"funkcji wiarygodności","correct":false}]},{"id":"Q9","chapter":"angielski_pl","type":"single","q":"Cechy, które odróżniają osobniki w tym samym stanie nazywane są:","answers":[{"id":"A","text":"cechy pierwotne","correct":false},{"id":"B","text":"cechy wtórne","correct":true},{"id":"C","text":"cechy stałe","correct":false}]},{"id":"Q10","chapter":"angielski_pl","type":"single","q":"Jaką funkcję można zapisać jako 1-F(t), gdzie F jest funkcją rozkładu skumulowanego?","answers":[{"id":"A","text":"funkcja gęstości","correct":false},{"id":"B","text":"funkcja przeżycia","correct":true},{"id":"C","text":"funkcja hazardu","correct":false}]},{"id":"Q11","chapter":"angielski_pl","type":"single","q":"Nieparametryczne metody analizy przeżycia obejmują:","answers":[{"id":"A","text":"modele przyspieszonej porażki","correct":false},{"id":"B","text":"estymator Kaplana Meiera","correct":true},{"id":"C","text":"model proporcjonalnych hazardów","correct":false}]},{"id":"Q12","chapter":"angielski_pl","type":"single","q":"Tradycyjna metoda konstruowania tablic trwania życia:","answers":[{"id":"A","text":"może być stosowana tylko wtedy, gdy mamy niewiele obserwacji","correct":false},{"id":"B","text":"wymaga grupowania poszczególnych czasów obserwacji w przedziały","correct":true},{"id":"C","text":"nie ma zastosowania, gdy chcemy wyznaczyć estymator funkcji hazardu","correct":false}]},{"id":"Q13","chapter":"angielski_pl","type":"single","q":"Poniższy test nie jest używany do oceny różnic między rozkładami czasu trwania:","answers":[{"id":"A","text":"log-rank (test nieparametryczny)","correct":false},{"id":"B","text":"Peto-Prentice (test nieparametryczny)","correct":false},{"id":"C","text":"Score","correct":true}]},{"id":"Q14","chapter":"angielski_pl","type":"single","q":"Rozkłady nieinformacyjne nie obejmują:","answers":[{"id":"A","text":"rozkładów płaskich","correct":false},{"id":"B","text":"rozkładów normalnych o niskiej wariancji","correct":true},{"id":"C","text":"rozkładu Jeffreysa","correct":false}]},{"id":"Q15","chapter":"angielski_pl","type":"single","q":"Model, który można uznać zarówno za model proporcjonalnych hazardów, jak i model przyspieszonej porażki, to:","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"Weibulla","correct":true},{"id":"C","text":"logarytmiczno-logistyczny","correct":false}]},{"id":"Q16","chapter":"angielski_pl","type":"single","q":"Parametry semiparametrycznych modeli przeżycia są szacowane przy użyciu:","answers":[{"id":"A","text":"metody największej wiarygodności","correct":false},{"id":"B","text":"metody największej częściowej wiarygodności","correct":true},{"id":"C","text":"metody momentów","correct":false}]},{"id":"Q17","chapter":"angielski_pl","type":"single","q":"W podejściu bayesowskim, statystyczne wnioskowanie o dowolnym parametrze opiera się na:","answers":[{"id":"A","text":"rozkładzie a posteriori","correct":true},{"id":"B","text":"rozkładzie a priori","correct":false},{"id":"C","text":"metodzie największej wiarygodności","correct":false}]},{"id":"Q18","chapter":"angielski_pl","type":"single","q":"Aby zweryfikować założenie proporcjonalności hazardu, stosuje się następujące metody:","answers":[{"id":"A","text":"reszty punktowe (score residuals)","correct":false},{"id":"B","text":"reszty Schoenfelda","correct":true},{"id":"C","text":"resztę odchylenia","correct":false}]},{"id":"Q19","chapter":"angielski_pl","type":"single","q":"W podejściu bayesowskim modele można porównywać za pomocą:","answers":[{"id":"A","text":"współczynnika prawdopodobieństwa","correct":false},{"id":"B","text":"BIC","correct":false},{"id":"C","text":"DIC","correct":true}]},{"id":"Q20","chapter":"angielski_pl","type":"single","q":"Test, który opiera się na porównaniu średniej wartości początkowych iteracji łańcucha Markowa ze średnią wartością kolejnych iteracji łańcucha Markowa to:","answers":[{"id":"A","text":"test Gelmana-Rubina","correct":false},{"id":"B","text":"test Geweke'a","correct":true},{"id":"C","text":"test Walda","correct":false}]},{"id":"Q21","chapter":"angielski_pl","type":"single","q":"Parametry parametrycznych modeli przeżycia są szacowane przy użyciu:","answers":[{"id":"A","text":"metody największej wiarygodności","correct":true},{"id":"B","text":"metody największej częściowej wiarygodności","correct":false},{"id":"C","text":"metody momentów","correct":false}]},{"id":"Q22","chapter":"angielski_pl","type":"single","q":"Którego testu można użyć do porównania dwóch zagnieżdżonych parametrycznych modeli przeżycia w podejściu klasycznym?","answers":[{"id":"A","text":"test Raftery'ego-Lewisa","correct":false},{"id":"B","text":"test Harringtona-Fleminga","correct":false},{"id":"C","text":"iloraz wiarygodności","correct":true}]},{"id":"Q23","chapter":"angielski_pl","type":"single","q":"W klasycznym podejściu modele parametryczne mogą być porównywane przy użyciu:","answers":[{"id":"A","text":"AIC","correct":true},{"id":"B","text":"EBIC","correct":false},{"id":"C","text":"EAIC","correct":false}]},{"id":"Q24","chapter":"angielski_pl","type":"single","q":"W modelu proporcjonalnych hazardów exp(współczynnik niezależnej zmiennej binarnej) to:","answers":[{"id":"A","text":"iloraz zagrożeń","correct":true},{"id":"B","text":"iloczyn zagrożeń","correct":false},{"id":"C","text":"prawdopodobieństwo przeżycia","correct":false}]},{"id":"Q25","chapter":"angielski_en","type":"single","q":"Traditional method of constructing life tables:","answers":[{"id":"A","text":"can only be used when we have few observations","correct":false},{"id":"B","text":"requires grouping individual observation times into intervals","correct":true},{"id":"C","text":"is not applicable when we want to determine the estimator of the hazard function","correct":false}]},{"id":"Q26","chapter":"angielski_en","type":"single","q":"The following test is not used to assess differences between duration distributions:","answers":[{"id":"A","text":"log-rank","correct":false},{"id":"B","text":"Peto-Prentice","correct":false},{"id":"C","text":"Score","correct":true}]},{"id":"Q27","chapter":"angielski_en","type":"single","q":"Uninformative prior distributions do not include:","answers":[{"id":"A","text":"flat prior distributions","correct":false},{"id":"B","text":"normal distributions with low variance","correct":true},{"id":"C","text":"Jeffreys prior distribution","correct":false}]},{"id":"Q28","chapter":"angielski_en","type":"single","q":"A model that can be considered both as a proportional hazards model and as an accelerated failure time model is:","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"Weibull","correct":true},{"id":"C","text":"log-logistic","correct":false}]},{"id":"Q29","chapter":"angielski_en","type":"single","q":"The parameters of semiparametric survival models are estimated using:","answers":[{"id":"A","text":"the maximum likelihood method","correct":false},{"id":"B","text":"the maximum partial likelihood method","correct":true},{"id":"C","text":"the method of moments","correct":false}]},{"id":"Q30","chapter":"angielski_en","type":"single","q":"In the Bayesian approach, statistical inference about any parameter is based on:","answers":[{"id":"A","text":"a posterior distribution","correct":true},{"id":"B","text":"a prior distribution","correct":false},{"id":"C","text":"the maximum likelihood method","correct":false}]},{"id":"Q31","chapter":"angielski_en","type":"single","q":"To verify the proportional hazards assumption, the following are used:","answers":[{"id":"A","text":"score residuals","correct":false},{"id":"B","text":"Schoenfeld residuals","correct":true},{"id":"C","text":"deviation residuals","correct":false}]},{"id":"Q32","chapter":"angielski_en","type":"single","q":"In the Bayesian approach, models can be compared using:","answers":[{"id":"A","text":"the likelihood ratio","correct":false},{"id":"B","text":"BIC","correct":false},{"id":"C","text":"DIC","correct":true}]},{"id":"Q33","chapter":"angielski_en","type":"single","q":"The test which is based on the comparison of the average value of the initial iterations of the Markov chain with the average value of further iterations of the Markov chain is:","answers":[{"id":"A","text":"the Gelman-Rubin test","correct":false},{"id":"B","text":"the Geweke test","correct":true},{"id":"C","text":"the Wald test","correct":false}]},{"id":"Q34","chapter":"angielski_en","type":"single","q":"The parameters of parametric survival models are estimated using:","answers":[{"id":"A","text":"the maximum likelihood method","correct":true},{"id":"B","text":"the maximum partial likelihood method","correct":false},{"id":"C","text":"the method of moments","correct":false}]},{"id":"Q35","chapter":"angielski_en","type":"single","q":"Which test can be used to compare two nested parametric survival models in the classical approach?","answers":[{"id":"A","text":"the Raftery-Lewis test","correct":false},{"id":"B","text":"the Harrington-Fleming test","correct":false},{"id":"C","text":"the likelihood ratio","correct":true}]},{"id":"Q36","chapter":"angielski_en","type":"single","q":"In the classical approach, parametric models can be compared using:","answers":[{"id":"A","text":"AIC","correct":true},{"id":"B","text":"EBIC","correct":false},{"id":"C","text":"EAIC","correct":false}]},{"id":"Q37","chapter":"angielski_en","type":"single","q":"In the proportional hazards model, exp(coefficient of the independent binary variable) is:","answers":[{"id":"A","text":"ratio of hazards","correct":true},{"id":"B","text":"product of hazards","correct":false},{"id":"C","text":"probability of survival","correct":false}]},{"id":"Q38","chapter":"egzamin","type":"single","q":"Cechy, które różnicują jednostki znajdujące się w tym samym stanie to cechy:","answers":[{"id":"A","text":"pierwotne","correct":false},{"id":"B","text":"wtórne","correct":true},{"id":"C","text":"stałe","correct":false}]},{"id":"Q39","chapter":"egzamin","type":"single","q":"Jaka funkcja w analizie przeżycia wyraża wzór P(T≤t), t≥0?","answers":[{"id":"A","text":"dystrybuantę","correct":true},{"id":"B","text":"funkcję przeżycia","correct":false},{"id":"C","text":"funkcję hazardu","correct":false}]},{"id":"Q40","chapter":"egzamin","type":"single","q":"Do nieparametrycznych metod konstrukcji tablic trwania życia nie należy:","answers":[{"id":"A","text":"estymator Kaplana-Aalena","correct":true},{"id":"B","text":"estymator Nelsona-Aalena","correct":false},{"id":"C","text":"estymator Kaplana-Meiera","correct":false}]},{"id":"Q41","chapter":"egzamin","type":"single","q":"Tradycyjna metoda konstrukcji tablic trwania życia:","answers":[{"id":"A","text":"może być stosowana tylko wtedy, gdy mamy mało obserwacji","correct":false},{"id":"B","text":"wymaga grupowania poszczególnych czasów obserwacji w przedziały o jednakowej długości","correct":true},{"id":"C","text":"nie znajduje zastosowania, gdy chcemy wyznaczyć estymator funkcji hazardu","correct":false}]},{"id":"Q42","chapter":"egzamin","type":"single","q":"Do oceny różnic pomiędzy rozkładami czasu trwania nie wykorzystywany jest test:","answers":[{"id":"A","text":"log-rank","correct":false},{"id":"B","text":"Peto-Prentice","correct":false},{"id":"C","text":"Lagrange","correct":true}]},{"id":"Q43","chapter":"egzamin","type":"single","q":"Do nieinformacyjnych rozkładów a priori nie zalicza się:","answers":[{"id":"A","text":"płaskich rozkładów a priori","correct":false},{"id":"B","text":"rozkładów normalnych o małej wariancji","correct":true},{"id":"C","text":"rozkładów normalnych o dużej wariancji","correct":false}]},{"id":"Q44","chapter":"egzamin","type":"single","q":"Modelem, który może być rozważany zarówno jako model proporcjonalnych hazardów, jak i model przyspieszonej porażki jest model:","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"Weibulla","correct":true},{"id":"C","text":"Gompertza","correct":false}]},{"id":"Q45","chapter":"egzamin","type":"single","q":"Do estymacji parametrów modeli semiparametrycznych wykorzystywana jest:","answers":[{"id":"A","text":"funkcja wiarygodności","correct":false},{"id":"B","text":"funkcja częściowej wiarygodności","correct":true},{"id":"C","text":"funkcja ważonego prawdopodobieństwa","correct":false}]},{"id":"Q46","chapter":"q22_37","type":"single","q":"Charakterystyki/cechy, które różnicują jednostki w tym samym stanie, nazywane są:","answers":[{"id":"A","text":"cechy pierwotne","correct":false},{"id":"B","text":"cechy wtórne","correct":true},{"id":"C","text":"cechy stałe","correct":false}]},{"id":"Q47","chapter":"q22_37","type":"single","q":"Jaką funkcję można zapisać jako 1-F(t), gdzie F jest dystrybuantą?","answers":[{"id":"A","text":"funkcja gęstości","correct":false},{"id":"B","text":"funkcja przeżycia","correct":true},{"id":"C","text":"funkcja hazardu","correct":false}]},{"id":"Q48","chapter":"q22_37","type":"single","q":"Nieparametryczne metody analizy przeżycia obejmują:","answers":[{"id":"A","text":"modele przyspieszonego czasu uszkodzeń","correct":false},{"id":"B","text":"estymator Kaplana-Meiera","correct":true},{"id":"C","text":"model proporcjonalnych hazardów","correct":false}]},{"id":"Q49","chapter":"q22_37","type":"single","q":"Tradycyjna metoda konstruowania tablic życia:","answers":[{"id":"A","text":"może być używana, gdy mamy nowe obserwacje","correct":false},{"id":"B","text":"wymaga grupowania indywidualnych czasów obserwacji na przedziały","correct":true},{"id":"C","text":"nie jest stosowana, gdy chcemy wyznaczyć estymator funkcji hazardu","correct":false}]},{"id":"Q50","chapter":"q22_37","type":"single","q":"Następujący test nie jest używany do oceny różnic między rozkładami czasów trwania:","answers":[{"id":"A","text":"log-rank","correct":false},{"id":"B","text":"Peto-Prentice","correct":false},{"id":"C","text":"Score","correct":true}]},{"id":"Q51","chapter":"q22_37","type":"single","q":"Nieinformacyjne rozkłady a priori nie obejmują:","answers":[{"id":"A","text":"jednorodnych rozkładów a priori","correct":false},{"id":"B","text":"normalnych rozkładów o niskiej wariancji","correct":true},{"id":"C","text":"rozkładów Jeffreysa a priori","correct":false}]},{"id":"Q52","chapter":"q22_37","type":"single","q":"Model, który można uznać zarówno za model proporcjonalnych hazardów, jak i model przyspieszonego czasu uszkodzeń, to:","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"Weibull","correct":true},{"id":"C","text":"log-logistyczny","correct":false}]},{"id":"Q53","chapter":"q22_37","type":"single","q":"Parametry półparametrycznych modeli przeżycia są estymowane za pomocą:","answers":[{"id":"A","text":"metody maksymalnej wiarygodności","correct":false},{"id":"B","text":"metody maksymalnej cząstkowej wiarygodności","correct":true},{"id":"C","text":"metody momentów","correct":false}]},{"id":"Q54","chapter":"q22_37","type":"single","q":"W podejściu bayesowskim, wnioskowanie statystyczne na temat dowolnego parametru opiera się na:","answers":[{"id":"A","text":"rozkładzie a posteriori","correct":true},{"id":"B","text":"rozkładzie a priori","correct":false},{"id":"C","text":"metodzie maksymalnej wiarygodności","correct":false}]},{"id":"Q55","chapter":"q22_37","type":"single","q":"Do weryfikacji założenia o proporcjonalnych hazardach stosuje się:","answers":[{"id":"A","text":"reszty z testu score","correct":false},{"id":"B","text":"analizę reszt Schoenfelda","correct":true},{"id":"C","text":"odchylenie reszt","correct":false}]},{"id":"Q56","chapter":"q22_37","type":"single","q":"W podejściu bayesowskim modele można porównywać za pomocą:","answers":[{"id":"A","text":"stosunku wiarygodności","correct":false},{"id":"B","text":"BIC","correct":false},{"id":"C","text":"DIC","correct":true}]},{"id":"Q57","chapter":"q22_37","type":"single","q":"Test oparty na porównaniu średniej wartości początkowych iteracji łańcucha Markowa z średnią wartością dalszych iteracji łańcucha Markowa to:","answers":[{"id":"A","text":"test Gelmana-Rubina","correct":false},{"id":"B","text":"test Geweke","correct":true},{"id":"C","text":"test Wald","correct":false}]},{"id":"Q58","chapter":"q22_37","type":"single","q":"Parametry parametrycznych modeli przeżycia są estymowane za pomocą:","answers":[{"id":"A","text":"metody maksymalnej wiarygodności","correct":true},{"id":"B","text":"metody maksymalnej cząstkowej wiarygodności","correct":false},{"id":"C","text":"metody momentów","correct":false}]},{"id":"Q59","chapter":"q22_37","type":"single","q":"Który test można użyć do porównania dwóch zagnieżdżonych parametrycznych modeli przeżycia w podejściu klasycznym?","answers":[{"id":"A","text":"test Raftery'ego-Lewisa","correct":false},{"id":"B","text":"test Harringtona-Fleminga","correct":false},{"id":"C","text":"stosunek wiarygodności","correct":true}]},{"id":"Q60","chapter":"q22_37","type":"single","q":"W podejściu klasycznym, parametryczne modele można porównywać za pomocą:","answers":[{"id":"A","text":"AIC","correct":true},{"id":"B","text":"BIC","correct":false},{"id":"C","text":"EAIC","correct":false}]},{"id":"Q61","chapter":"q22_37","type":"single","q":"W modelu proporcjonalnych hazardów, exp(współczynnik zmiennej binarnej) jest:","answers":[{"id":"A","text":"stosunkiem hazardów","correct":true},{"id":"B","text":"iloczynem hazardów","correct":false},{"id":"C","text":"prawdopodobieństwem przeżycia","correct":false}]},{"id":"Q62","chapter":"niepewne","type":"multiple","q":"[NIEPEWNE] Do oceny różnic pomiędzy rozkładami czasu trwania wykorzystywany jest test (wielokrotny wybór - w materiale podświetlono jednocześnie 2 odpowiedzi, brak rozstrzygnięcia):","answers":[{"id":"A","text":"log-rank","correct":true},{"id":"B","text":"Peto-Prentice","correct":true},{"id":"C","text":"zgodności chi-kwadrat","correct":false}]},{"id":"Q63","chapter":"niepewne","type":"multiple","q":"[NIEPEWNE] Modelem, który może być rozważany zarówno jako model proporcjonalnych hazardów, jak i model przyspieszonej porażki jest model (wielokrotny wybór - dwa źródła wskazują różne odpowiedzi):","answers":[{"id":"A","text":"gamma","correct":false},{"id":"B","text":"wykładniczy","correct":true},{"id":"C","text":"Gompertza","correct":true}]},{"id":"Q64","chapter":"niepewne","type":"multiple","q":"[NIEPEWNE] Dla modeli estymowanych na gruncie klasycznym z wykorzystaniem funkcji wiarygodności w celu oceny stopnia dopasowania modelu do danych empirycznych wykorzystywana jest statystyka (wielokrotny wybór - dwa źródła wskazują różne odpowiedzi):","answers":[{"id":"A","text":"AIC","correct":true},{"id":"B","text":"DIC","correct":false},{"id":"C","text":"BIS","correct":true}]}];
+
+const CH = {
+  zeszloroczny: {name:'Zeszłoroczny', icon:'📋'},
+  angielski_pl: {name:'Angielski (wersja PL)', icon:'📖'},
+  angielski_en: {name:'Angielski (wersja EN)', icon:'🌐'},
+  egzamin: {name:'Egzamin', icon:'🎓'},
+  q22_37: {name:'Pytania 22-37', icon:'📐'},
+  niepewne: {name:'Niepewne (sprzeczne oznaczenia)', icon:'❓'}
+};
+
+// ── STORAGE ──────────────────────────────────────────────────────────
+const Store = {
+  KEY: 'gui_quiz_v1',
+  get() { try { return JSON.parse(localStorage.getItem(this.KEY)||'{}'); } catch { return {}; } },
+  set(d) { try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch {} },
+  record(id, ok) {
+    const d = this.get();
+    if (!d[id]) d[id] = {c:0,w:0};
+    ok ? d[id].c++ : d[id].w++;
+    this.set(d);
+  },
+  accuracy(code) {
+    const d = this.get();
+    const qs = Q.filter(q => q.chapter === code);
+    let c=0,t=0;
+    for (const q of qs) { if(d[q.id]){c+=d[q.id].c;t+=d[q.id].c+d[q.id].w;} }
+    return t===0 ? null : Math.round(c/t*100);
+  },
+  hardest(n=20) {
+    const d = this.get();
+    return Q.filter(q => (d[q.id]?.w||0)>0)
+             .sort((a,b)=>{
+               const ra=(d[a.id]?.w||0)/((d[a.id]?.c||0)+(d[a.id]?.w||0));
+               const rb=(d[b.id]?.w||0)/((d[b.id]?.c||0)+(d[b.id]?.w||0));
+               return rb-ra;
+             })
+             .slice(0,n);
+  },
+  hardestCount() {
+    const d = this.get();
+    return Math.min(20, Q.filter(q=>(d[q.id]?.w||0)>0).length);
+  },
+  reset() {
+    localStorage.removeItem(this.KEY);
+    for(let i=localStorage.length-1;i>=0;i--){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('gui_quiz_sess_'))localStorage.removeItem(k);
+    }
+    renderMenu();
+  }
+};
+
+// ── STATE ────────────────────────────────────────────────────────────
+let S = {mode:null,chapter:null,queue:[],idx:0,results:[],answered:false,timer:null,timerSecs:0};
+
+// ── UTILS ────────────────────────────────────────────────────────────
+function shuffle(a) {
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+function $(id){return document.getElementById(id);}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));$(id).classList.remove('hidden');}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// ── MENU ─────────────────────────────────────────────────────────────
+function renderMenu() {
+  const d = Store.get();
+  const lecturerQs = Q.filter(q=>q.source==='lecturer');
+  const lecDone = lecturerQs.filter(q=>d[q.id]).length;
+  const allDone = Q.filter(q=>d[q.id]).length;
+  function modeAccuracy(qs) {
+    let c=0,t=0;
+    for(const q of qs){if(d[q.id]){c+=d[q.id].c;t+=d[q.id].c+d[q.id].w;}}
+    return t===0?null:Math.round(c/t*100);
+  }
+  const lecPct = modeAccuracy(lecturerQs);
+  const allPct = modeAccuracy(Q);
+  $('stat-lecturer').textContent = `${lecDone}/${lecturerQs.length} pyt.${lecPct!==null?' · '+lecPct+'%':''}`;
+  $('stat-all').textContent = `${allDone}/${Q.length} pyt.${allPct!==null?' · '+allPct+'%':''}`;
+  const hardN = Store.hardestCount();
+  $('stat-hard').textContent = hardN>0?`top ${hardN} błędnych`:'brak błędnych';
+  const attempted = allDone;
+  $('menu-sub').textContent = attempted>0
+    ? `Baza: ${Q.length} pytań · Przetrenowano: ${attempted}`
+    : `Baza: ${Q.length} pytań · Brak historii`;
+
+  const grid = $('chapter-grid');
+  grid.innerHTML='';
+  for(const [code,info] of Object.entries(CH)){
+    const pct = Store.accuracy(code);
+    const chQs = Q.filter(q=>q.chapter===code);
+    const total = chQs.length;
+    const done = chQs.filter(q=>d[q.id]).length;
+    const w = pct!==null?pct:0;
+    const cls = pct===null?'fill-none':pct>=80?'fill-good':pct>=60?'fill-med':'fill-bad';
+    const pctTxt = pct!==null?`${pct}%`:'—';
+    const saved = hasSession('chapter', code);
+    const resumeBadge = saved
+      ? `<div class="ch-resume">▶ od ${saved.idx+1}/${saved.queueIds.length}</div>`
+      : '';
+    const card = document.createElement('div');
+    card.className='ch-card' + (saved ? ' ch-has-session' : '');
+    card.innerHTML=`<div class="ch-icon">${info.icon}</div>
+      <div class="ch-name">${info.name}</div>
+      <div class="ch-count"><span class="ch-done">${done}/${total}</span> pyt.</div>
+      <div class="ch-bar"><div class="ch-fill ${cls}" style="width:${w}%"></div></div>
+      <div class="ch-pct">${pctTxt}</div>${resumeBadge}`;
+    card.onclick=()=>startQuiz('chapter',code);
+    grid.appendChild(card);
+  }
+  show('screen-menu');
+}
+
+function showMenu(){
+  if(S.timer){clearInterval(S.timer);S.timer=null;}
+  renderMenu();
+}
+function resetStats(){
+  if(confirm('Resetować wszystkie statystyki?')){Store.reset();}
+}
+
+// ── SESSION PERSISTENCE (per mode+chapter) ───────────────────────────
+function sessionKey(mode, chapter) {
+  return 'gui_quiz_sess_' + mode + '_' + (chapter || 'x');
+}
+
+function saveSession() {
+  if (!S.queue.length || !S.mode) return;
+  const snap = {
+    mode: S.mode, chapter: S.chapter,
+    queueIds: S.queue.map(q => q.id),
+    idx: S.idx, savedAt: Date.now(),
+    results: S.results.map(r => ({qId: r.q.id, isOk: r.isOk, chosenIds: r.chosenIds, correctIds: r.correctIds}))
+  };
+  try { localStorage.setItem(sessionKey(S.mode, S.chapter), JSON.stringify(snap)); } catch {}
+}
+
+function loadSession(mode, chapter) {
+  try {
+    const raw = localStorage.getItem(sessionKey(mode, chapter));
+    if (!raw) return null;
+    const snap = JSON.parse(raw);
+    if (Date.now() - snap.savedAt > 7 * 86400000) {
+      localStorage.removeItem(sessionKey(mode, chapter));
+      return null;
+    }
+    return snap;
+  } catch { return null; }
+}
+
+function clearSession(mode, chapter) {
+  localStorage.removeItem(sessionKey(mode, chapter));
+}
+
+function hasSession(mode, chapter) {
+  const snap = loadSession(mode, chapter);
+  return snap && snap.idx > 0 ? snap : null;
+}
+
+function resumeSession(snap) {
+  const qMap = Object.fromEntries(Q.map(q => [q.id, q]));
+  const queue = snap.queueIds.map(id => qMap[id]).filter(Boolean);
+  if (!queue.length) return false;
+  if (S.timer) { clearInterval(S.timer); S.timer = null; }
+  const prevResults = (snap.results || [])
+    .map(r => ({ q: qMap[r.qId], isOk: r.isOk, chosenIds: r.chosenIds, correctIds: r.correctIds }))
+    .filter(r => r.q);
+  S = { mode: snap.mode, chapter: snap.chapter, queue, idx: snap.idx,
+         results: prevResults, answered: false, timer: null, timerSecs: 0 };
+  show('screen-quiz');
+  if (S.mode === 'exam') startTimer(45 * 60);
+  renderQuestion();
+  return true;
+}
+
+// ── QUIZ ENGINE ──────────────────────────────────────────────────────
+function pickExam(n){
+  const codes=Object.keys(CH);
+  const per=Math.floor(n/codes.length);
+  let pool=[];
+  for(const c of codes){
+    pool.push(...shuffle(Q.filter(q=>q.chapter===c)).slice(0,per));
+  }
+  const remaining=shuffle(Q.filter(q=>!pool.includes(q)));
+  pool.push(...remaining.slice(0,n-pool.length));
+  return shuffle(pool).slice(0,n);
+}
+
+function startQuiz(mode, chapter=null){
+  // Check for saved session matching this mode+chapter
+  const snap = loadSession(mode, chapter);
+  if (snap && snap.idx > 0) {
+    const remaining = snap.queueIds.length - snap.idx;
+    if (confirm(`Niezakończony quiz: ${snap.idx}/${snap.queueIds.length} pyt. wykonanych. Kontynuować od pytania ${snap.idx + 1}?`)) {
+      resumeSession(snap);
+      return;
+    } else {
+      clearSession(mode, chapter);
+    }
+  }
+  // Fresh start
+  if(S.timer){clearInterval(S.timer);S.timer=null;}
+  S={mode,chapter,queue:[],idx:0,results:[],answered:false,timer:null,timerSecs:0};
+  let pool;
+  if(mode==='lecturer') pool=Q.filter(q=>q.source==='lecturer');
+  else if(mode==='all')  pool=[...Q];
+  else if(mode==='chapter') pool=Q.filter(q=>q.chapter===chapter);
+  else if(mode==='hard'){
+    pool=Store.hardest(20);
+    if(!pool||pool.length===0){
+      alert('Brak błędnych odpowiedzi w historii. Uruchamiam wszystkie pytania.');
+      startQuiz('all'); return;
+    }
+  }
+  else if(mode==='exam')  pool=pickExam(30);
+  if(!pool||pool.length===0){alert('Brak pytań w tej kategorii.');return;}
+  S.queue=shuffle(pool);
+  clearSession(mode, chapter);
+  show('screen-quiz');
+  if(mode==='exam') startTimer(45*60);
+  renderQuestion();
+}
+
+function startTimer(secs){
+  S.timerSecs=secs;
+  const el=$('timer');
+  el.classList.remove('hidden');
+  el.classList.remove('danger');
+  const tick=()=>{
+    const m=Math.floor(S.timerSecs/60);
+    const s=S.timerSecs%60;
+    el.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    if(S.timerSecs<=60) el.classList.add('danger');
+    if(S.timerSecs<=0){clearInterval(S.timer);S.timer=null;finishQuiz();return;}
+    S.timerSecs--;
+  };
+  tick();
+  S.timer=setInterval(tick,1000);
+}
+
+function exitQuiz(){
+  if(confirm('Wyjść z quizu? Postęp zostanie zapisany — wrócisz do tego pytania.')){
+    saveSession();
+    if(S.timer){clearInterval(S.timer);S.timer=null;}
+    renderMenu();
+  }
+}
+
+// ── RENDER QUESTION ─────────────────────────────────────────────────
+function renderQuestion(){
+  S.answered=false;
+  const q=S.queue[S.idx];
+  const total=S.queue.length;
+
+  $('q-prog-text').textContent=`${S.idx+1} / ${total}`;
+  $('q-prog-bar').style.width=`${Math.round((S.idx+1)/total*100)}%`;
+
+  const timerEl=$('timer');
+  if(S.mode!=='exam') timerEl.classList.add('hidden');
+
+  $('q-tag').textContent=CH[q.chapter]?.name||q.chapter;
+  $('q-text').textContent=q.q;
+
+  const multiEl=$('q-multi');
+  if(q.type==='multiple') multiEl.classList.remove('hidden');
+  else multiEl.classList.add('hidden');
+
+  // Answers
+  const container=$('answers');
+  container.innerHTML='';
+  const shuffled=shuffle(q.answers);
+  shuffled.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='ans-card';
+    div.dataset.id=a.id;
+    const marker=q.type==='single'?'◯':'☐';
+    div.innerHTML=`<span class="ans-marker">${marker}</span><span class="ans-text">${esc(a.text)}</span>`;
+    div.onclick=()=>selectAnswer(div,q.type,container);
+    container.appendChild(div);
+  });
+
+  const btn=$('btn-check');
+  btn.disabled=true;
+  btn.textContent='Sprawdź odpowiedź';
+  btn.classList.remove('hidden');
+
+  const fb=$('feedback');
+  fb.classList.add('hidden');
+  fb.innerHTML='';
+}
+
+function selectAnswer(card, type, container){
+  if(S.answered) return;
+  if(type==='single'){
+    container.querySelectorAll('.ans-card').forEach(c=>{
+      c.classList.remove('sel');
+      c.querySelector('.ans-marker').textContent='◯';
+    });
+    card.classList.add('sel');
+    card.querySelector('.ans-marker').textContent='●';
+  } else {
+    card.classList.toggle('sel');
+    card.querySelector('.ans-marker').textContent=card.classList.contains('sel')?'☑':'☐';
+  }
+  $('btn-check').disabled=container.querySelectorAll('.ans-card.sel').length===0;
+}
+
+function checkAnswer(){
+  if(S.answered) return;
+  S.answered=true;
+  const q=S.queue[S.idx];
+  const container=$('answers');
+  const chosenIds=[...container.querySelectorAll('.ans-card.sel')].map(el=>el.dataset.id);
+  const correctIds=q.answers.filter(a=>a.correct).map(a=>a.id).sort();
+  const isOk=JSON.stringify([...chosenIds].sort())===JSON.stringify(correctIds);
+
+  Store.record(q.id, isOk);
+  S.results.push({q, isOk, chosenIds, correctIds});
+  S.idx++; // advance before saving so resume skips this question
+  saveSession();
+  S.idx--; // restore for rendering logic below
+
+  if(S.mode==='exam'){
+    if(S.idx+1>=S.queue.length) finishQuiz();
+    else{ S.idx++; renderQuestion(); }
+    return;
+  }
+
+  // Show feedback colors
+  container.querySelectorAll('.ans-card').forEach(card=>{
+    const id=card.dataset.id;
+    const isCh=chosenIds.includes(id);
+    const isCr=correctIds.includes(id);
+    card.classList.remove('sel');
+    card.onclick=null;
+    if(isCr){ card.classList.add('ok'); card.querySelector('.ans-marker').textContent='✓'; }
+    else if(isCh){ card.classList.add('err'); card.querySelector('.ans-marker').textContent='✗'; }
+  });
+
+  $('btn-check').classList.add('hidden');
+
+  const fb=$('feedback');
+  fb.className=`feedback ${isOk?'fb-ok':'fb-err'}`;
+  fb.classList.remove('hidden');
+  const isLast=S.idx+1>=S.queue.length;
+  fb.innerHTML=`<div class="fb-label">${isOk?'✓ Poprawnie!':'✗ Błąd'}</div>
+    <button class="btn-next" onclick="nextQ()">${isLast?'Zobacz wyniki →':'Następne →'}</button>`;
+}
+
+function nextQ(){
+  S.idx++;
+  if(S.idx>=S.queue.length) finishQuiz();
+  else renderQuestion();
+}
+
+// ── RESULTS ─────────────────────────────────────────────────────────
+function finishQuiz(){
+  clearSession(S.mode, S.chapter);
+  if(S.timer){clearInterval(S.timer);S.timer=null;}
+  show('screen-results');
+  const correct=S.results.filter(r=>r.isOk).length;
+  const total=S.results.length;
+  const pct=total>0?Math.round(correct/total*100):0;
+  $('res-score').textContent=`${correct} / ${total}`;
+  $('res-pct').textContent=`${pct}%`;
+  $('res-label').textContent=pct>=90?'🎉 Doskonale!':pct>=75?'👍 Bardzo dobrze!':pct>=60?'📚 Dobrze, ćwicz dalej!':'💪 Nie poddawaj się!';
+  const bar=$('res-bar');
+  bar.style.width=`${pct}%`;
+  bar.className=`result-bar-fill ${pct>=80?'fill-good':pct>=60?'fill-med':'fill-bad'}`;
+
+  const wrong=S.results.filter(r=>!r.isOk);
+  $('wrong-title').textContent=wrong.length>0?`Błędne odpowiedzi (${wrong.length}):` : '';
+  const list=$('wrong-list');
+  list.innerHTML='';
+  if(wrong.length===0){
+    list.innerHTML='<div class="all-correct">Wszystkie odpowiedzi poprawne! 🎉</div>';
+  } else {
+    wrong.forEach(r=>{
+      const cTxt=r.q.answers.filter(a=>r.correctIds.includes(a.id)).map(a=>a.text).join(' · ');
+      const chTxt=r.q.answers.filter(a=>r.chosenIds.includes(a.id)).map(a=>a.text).join(' · ');
+      const d=document.createElement('div');
+      d.className='wrong-item';
+      d.innerHTML=`<div class="wrong-q"><b>${r.q.id}</b>: ${esc(r.q.q)}</div>
+        ${chTxt?`<div class="wrong-chosen">✗ Twoja: ${esc(chTxt)}</div>`:'<div class="wrong-chosen">✗ Brak odpowiedzi</div>'}
+        <div class="wrong-correct">✓ Poprawna: ${esc(cTxt)}</div>`;
+      list.appendChild(d);
+    });
+  }
+
+  $('btn-retry').style.display=wrong.length>0?'':'none';
+}
+
+function retryWrong(){
+  const wrong=S.results.filter(r=>!r.isOk).map(r=>r.q);
+  if(!wrong.length) return;
+  const prevMode=S.mode;
+  const prevChapter=S.chapter;
+  S={mode:prevMode,chapter:prevChapter,queue:shuffle(wrong),idx:0,results:[],answered:false,timer:null,timerSecs:0};
+  show('screen-quiz');
+  renderQuestion();
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+renderMenu();
+</script>
+</body>
+</html>
